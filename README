@@ -1,0 +1,103 @@
+Unanomaly
+---------
+
+Unanomaly is a generic data anomaly finder. It reads a multiple-column csv file and finds anomalies in the data. You can select the threshold in order to find more or less anomalies.
+It uses an unsupervised multivariate RBF-based anomaly detection algorithm to analyze all the numeric columns. Based on the threshold, it decides which rows are anomalous and it show them to you. You should analyze the results and validate the output.
+
+Anomaly detection is a difficult task. Unanomaly is meant to facilitate the task of finding anomalies in any numeric dataset. It does not matter if the data represent cpu cycles, temperature, salary, kilometers, people height or distances. It will fit the data to a detection model and will use a threshold to give you the anomalies.
+
+You can use it directly from a console or you can use the internal, eye-candy web page. In the web page you can drag-and-drop csv files and manually select the threshold with a slider.
+
+
+The main features are:
+- It can read csv files
+- It can validate the files to avoid using non-numerical features.  - It can validate the files to avoid uneven number of columns in the rows.
+- It gives you a nice web page to work. (not working on linux-chrome)
+- The web page let you drag-and-drop the csv files.
+- The web page let you run a slider to choose the threshold. This gives you the opportunity to see the results almost in real-time.
+- You can interactively set the threshold in the console to find the best value.
+- It can plot the data in the web page, detectin the anomalies.
+- It shows the anomalies in a web table.
+
+About anomaly detection
+-----------------------
+To detect anomalies it is necessary to create a model of the normal data. These model are usually complex and depends on the data. Unanomaly implements a detection algorithm that does not relay on the data. It creates a model for every feature and then computes the probability of the given data belonging to the distribution.
+The octave code is based on the Machine Learning open course given by Andrew Ng. Thanks a lot Andrew! Without the course this tool would never exist.
+
+
+Usage:
+------
+
+./unanomaly.py -w
+
+Start with the webserver running in http://localhost:8000
+
+
+./unanomaly.py -f test.csv -a 10
+
+Use the console to analyze the test.csv file and find the top 10 anomalies.
+
+
+Example output in console
+-------------------------
+
+./unanomaly.py -a 10 -f test3.csv 
+Number of outliers: 9
+Enter a new number of anomalies (s to show the outliers values, or CTRL-C to exit):  5
+Number of outliers: 5
+Enter a new number of anomalies (s to show the outliers values, or CTRL-C to exit):  s
+Outliers: 
+5900 5427 638 925 26 16 21 16 46 233 231 233 
+5904 5431 794 809 26 14 19 16 45 234 232 233 
+5908 5435 987 686 31 15 20 16 44 232 231 232 
+5931 5456 442 513 28 21 25 16 41 233 232 232 
+7652 7063 243 249 37 18 21 16 -99 239 238 239 
+Number of outliers: 5
+Enter a new number of anomalies (s to show the outliers values, or CTRL-C to exit):  ^C
+
+
+./unanomaly.py -h
++----------------------------------------------------------------------+
+| Unanomaly Version 0.1                                                |
+| This program is free software; you can redistribute it and/or modify |
+| it under the terms of the GNU General Public License as published by |
+| the Free Software Foundation; either version 2 of the License, or    |
+| (at your option) any later version.                                  |
+|                                                                      |
+|  Authors                                                             |
+|  Sebastian Garcia, eldraco@gmail.com                                 |
+|  Maximo Martinez, maximomrtnz@gmail.com                              |
+|  Pablo Meyer, pablitomeyer@gmail.com                                 |
++----------------------------------------------------------------------+
+
+usage: ./unanomaly.py <options>
+options:
+  -h, --help           Show this help message and exit
+  -V, --version        Output version information and exit
+  -v, --verbose        Output more information.
+  -D, --debug          Debug. In debug mode the statistics run live.
+  -f, --file           CSV dataset file to analyze.
+  -a, --anomalies      The maximum amount of anomalies that you want.
+  -p, --port           Webserver port
+  -w, --webserver      Use the Webserver
+
+
+
+TODO
+----
+- Print the number of each row in the output of the anomalies. Both in the console and the web page.
+- Find a way to automatically ignore non-numeric columns.
+- Test it on more datasets.
+- Add a legend to the threshold
+- Add a good explanation on the web page.
+- Fix the table to look good.
+-.Create a nice logo?
+- Add a file selector along with the drag and drop option. (so chrome on linux can work)
+- Fix the ranges of the graphs.
+- Migrate everthing to js.
+- The file is not being uploaded through the Internet, but read from the hard disk!
+- Put the project on openshift or other online service so anybody can use it.
+
+Special Thanks
+--------------
+To Andrew Ng for his amazing ML course. This program uses part of their original octave code.

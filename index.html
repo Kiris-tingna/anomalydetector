@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<link rel=stylesheet href="styles/index.css" type="text/css">
+		<script type="text/javascript" src="scripts/jquery-1.8.3.js"></script>	
+		<script type="text/javascript" src="scripts/jquery-ui.js"></script>	
+		<script type="text/javascript" src="scripts/js/highcharts.js"></script>	
+		<link rel=stylesheet href="styles/jquery-ui.css" type="text/css">
+	
+		<script>
+			$(document).ready(function(){
+				
+				var pathFile = "";
+				var file;
+				var chart;
+				var outLiers;
+				var dataLocalFile;
+				var listaColumna = [];
+
+				$( "#slider" ).slider();
+
+				var oFReader = new FileReader();
+ 
+				oFReader.onload = function (oFREvent) {
+					dataLocalFile = oFREvent.target.result;
+  					dataLocalFile = dataLocalFile.split("\n");
+  					var lengthColumn = dataLocalFile[0].split(",").length;
+  					drawCheckBox(lengthColumn);
+  					//parseOutliers(outLiers,dataLocalFile);
+				};
+
+				function handleFileSelect(evt) {
+
+					$('#box_drop_zone').toggleClass('box_drop_zone_start_drag');
+    				evt.stopPropagation();
+    				evt.preventDefault();
+
+    				var files = evt.dataTransfer.files; // FileList object.
+
+    				// files is a FileList of File objects. List some properties.
+    				var output = [];
+    				for (var i = 0, f; f = files[i]; i++) {
+                  		pathFile = escape(f.name);
+                  		file = f;
+    				}
+
+    				
+  				}
+
+				function handleDragOver(evt) {
+					$('#box_drop_zone').toggleClass('box_drop_zone_start_drag');
+				    evt.stopPropagation();
+				    evt.preventDefault();
+				    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+				}
+
+				// Setup the dnd listeners.
+				var dropZone = document.getElementById('drop_zone');
+				dropZone.addEventListener('dragover', handleDragOver, false);
+				dropZone.addEventListener('drop', handleFileSelect, false);
+
+				$( "#slider" ).slider({
+    				change: function( event, ui ) {
+    					console.log($( "#slider" ).slider( "value" ));
+    				}
+				});
+
+				$( "#slider" ).on( "slidechange", function( event, ui ) {
+					var sliderValue = $( "#slider" ).slider( "value" );
+					$.get('http://localhost:8000/compute?file='+pathFile+'&anomalies='+sliderValue, function(data,status) {
+							if(status == "success"){
+								oFReader.readAsText(file);
+ 								outLiers = data;
+ 								parseOutliers(data);
+							}
+						});
+
+				} );
+
+				function parseOutliers(datos){
+					var datosJSON = jQuery.parseJSON(datos);
+					var lista = datosJSON.Lists;
+					var listaDatos = [];
+					var cant_columnas = lista[0].split(" ").length;					  
+					$('#table_id').empty();
+					$('#table_id').append('<tr id="header"></tr>');
+					for (var i=1; i< cant_columnas; i++)
+					  $('#header').append('<td><h5>Column '+ i + '</h5></td>');
+					for(var i=0;i<lista.length;i++){
+						$('#table_id').append('<tr id="row_outliers'+i+'"></tr>');
+						var arrayDatos = lista[i].split(" ");
+						var setDatos = [];
+						for (var aux= 0 ; aux < cant_columnas;aux++){
+						  //$('#row_outliers').append('<td class="data_row_x"><label class="data data_x">'+arrayDatos[aux]+'</label></td>');
+						  $('#row_outliers'+ i).append('<td>'+arrayDatos[aux]+'</td>');
+						}
+						/*var x = arrayDatos[0];
+						var y = arrayDatos[1];
+						setDatos.push(parseInt(x));
+						setDatos.push(parseInt(y));
+						listaDatos.push(setDatos);
+						//$('#tabla_outliers').append('<li class="data_row_x"><label class="data data_x">'+x+'</label><label class="data data_y">'+y+'</label><li>');	
+						*/
+					}
+					//plotData(listaDatos,'container');			
+				};
+
+				
+				function drawCheckBox(lengthColumn){
+					$('.check_column').remove('');
+					for(var i = 0; i<lengthColumn;i++){
+						$('#select_column').append('<input id="check'+i+'" type="checkbox" class="check_column" value="Column'+i+'"">');
+						$('#check'+i).click(function () {
+							if(listaColumna.length < 2){
+								listaColumna.push(parseInt(this.id.replace('check','')));
+								if(listaColumna.length==2){
+									var listaDatos = [];
+									for(var j=0;j<dataLocalFile.length;j++){
+										var auxData = dataLocalFile[j].split(',');
+										var setDatos = [];
+										var x = auxData[listaColumna[0]];
+										var y = auxData[listaColumna[1]];
+										setDatos.push(parseInt(x));
+										setDatos.push(parseInt(y));
+										listaDatos.push(setDatos);		
+									}
+
+
+									for(var j=0;j<dataLocalFile.length;j++){
+										var auxData = dataLocalFile[j].split(',');
+										var setDatos = [];
+										var x = auxData[listaColumna[0]];
+										var y = auxData[listaColumna[1]];
+										setDatos.push(parseInt(x));
+										setDatos.push(parseInt(y));
+										listaDatos.push(setDatos);		
+									}
+
+										var datosJSON = jQuery.parseJSON(outLiers);
+										var lista = datosJSON.Lists;
+										var listaOutliers = [];
+										for(var i=0;i<lista.length;i++){
+											var arrayDatos = lista[i].split(" ");
+											var setDatos = [];
+											var x = arrayDatos[listaColumna[0]];
+											var y = arrayDatos[listaColumna[1]];
+											setDatos.push(parseInt(x));
+											setDatos.push(parseInt(y));
+											listaOutliers.push(setDatos);
+										}
+									
+
+									plotData(listaDatos,listaOutliers,'contenedor');	
+								}
+							}else{
+								listaColumna = [];
+							}
+
+						});
+					}
+				};
+
+				
+
+                function plotData(listaDatos,listaOutliers,divChar){
+                    // Del del content so the next plot is seen right.
+					$('#chart_container').html('');
+					$('#chart_container').append('<div id="'+divChar+'" class="charts" style="width: 100%; height: 400px"></div>');
+					chart = new Highcharts.Chart({
+            		chart: {
+                		renderTo: divChar,
+                		type: 'scatter',
+                		zoomType: 'xy'
+            		},
+            		title: {
+                		text: ''
+            		},
+            		subtitle: {
+                		text: ''
+            		},
+		            xAxis: {
+		                title: {
+		                    enabled: true,
+		                    text: 'Column X'
+		                },
+		                startOnTick: true,
+		                endOnTick: true,
+		                showLastLabel: true
+		            },
+			        yAxis: {
+			            title: {
+			                text: 'Column Y'
+			                }
+			            },
+			        tooltip: {
+			            formatter: function() {
+			        	        return ''+
+			                    this.x +' x, '+ this.y +' y';
+			            }
+			        },
+		            legend: {
+		                layout: 'vertical',
+		                align: 'left',
+		                verticalAlign: 'top',
+		                x: 100,
+		                y: 70,
+		                floating: true,
+		                backgroundColor: '#FFFFFF',
+		                borderWidth: 1
+		            },
+		            plotOptions: {
+		                scatter: {
+		                    marker: {
+		                        radius: 5,
+		                        states: {
+		                            hover: {
+		                                enabled: true,
+		                                lineColor: 'rgb(100,100,100)'
+		                            }
+		                        }
+		                    },
+		                    states: {
+		                        hover: {
+		                            marker: {
+		                                enabled: false
+		                            }
+		                        }
+		                    }
+		                }
+		            },
+				    series: [{
+				            name: 'Data',
+				            color: 'rgba(223, 83, 83, .5)',
+				            data: listaDatos
+				            },{
+				            	name: 'Outliers',
+				            	color: 'rgba(119, 152, 191, .5)',
+				            	data: listaOutliers
+				            }]
+				        });
+					};
+
+			});
+
+        
+    
+
+		</script>
+	</head>
+	<body>
+        <div id="contenedor_principal">
+            <center><img style="border-width: 0px;" src="styles/images/logo.png" width="170" height="80" />
+</center>
+            <center><h2>Hackaton 2013</h2></center>
+
+            <center><h3>Detector de Anomalías en Datasets</h3></center>
+			<div id="contenedor_cuerpo">
+				<div id="box_drop_zone">	
+					<div id="drop_zone">
+						<div id="drop_zone_text">
+							Arrastre su Archivo aquí
+						</div>	
+					</div>
+				</div>
+
+				<div id="box_seek_bar">
+					<div id="slider"></div>
+				</div> 
+				<div id="select_column">
+				</div>
+				<div id="chart_container">
+				</div>	
+				<div id="box_tabla_outliers">
+				  <table id="table_id"> </table>
+				</div>
+			</div>	
+		</div>	
+	</body>	
+</html> 
